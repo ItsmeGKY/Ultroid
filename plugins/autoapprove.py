@@ -1,6 +1,6 @@
 # Ultroid - UserBot
 # Auto Approve Join Requests (Per Chat, MongoDB Persistent, List Command, Delay)
-# Compatible with Ultroid's Telethon version
+# Compatible with Ultroid's Telethon version (events.JoinRequest)
 
 import asyncio
 from telethon import events
@@ -8,18 +8,18 @@ from . import udB, ultroid_bot, ultroid_cmd  # Ultroid imports
 
 COLLECTION = "autoapprove_chats"
 
-async def get_enabled_chats():
-    data = await udB.get(COLLECTION)
+def get_enabled_chats():
+    data = udB.get(COLLECTION)
     return set(data or [])
 
-async def save_enabled_chats(chats):
-    await udB.set(COLLECTION, list(chats))
+def save_enabled_chats(chats):
+    udB.set(COLLECTION, list(chats))
 
 @ultroid_cmd(pattern="autoapprove ?(.*)?")
 async def toggle_autoapprove(event):
     """Toggle/check/list auto-approve join requests (MongoDB persistent)."""
     args = (event.pattern_match.group(1) or "").lower().strip()
-    chats = await get_enabled_chats()
+    chats = get_enabled_chats()
 
     if not args:
         status = "ON" if event.chat_id in chats else "OFF"
@@ -27,12 +27,12 @@ async def toggle_autoapprove(event):
 
     if args == "on":
         chats.add(event.chat_id)
-        await save_enabled_chats(chats)
+        save_enabled_chats(chats)
         return await event.edit("✅ Auto-approve **enabled** for this chat.")
 
     elif args == "off":
         chats.discard(event.chat_id)
-        await save_enabled_chats(chats)
+        save_enabled_chats(chats)
         return await event.edit("❌ Auto-approve **disabled** for this chat.")
 
     elif args == "list":
@@ -55,7 +55,7 @@ async def toggle_autoapprove(event):
 @ultroid_bot.on(events.JoinRequest)
 async def approve_join_request(event):
     """Approve join requests if enabled for this chat, with a 5-second delay."""
-    chats = await get_enabled_chats()
+    chats = get_enabled_chats()
     if event.chat_id not in chats:
         return  # Not enabled for this chat
 
