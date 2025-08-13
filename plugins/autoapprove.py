@@ -1,13 +1,14 @@
 # Ultroid - UserBot
-# Auto Approve Join Requests (Per Chat, MongoDB Persistent, List Command, Delay)
-# Compatible with Ultroid's Telethon version (events.JoinRequest)
+# Auto Approve Join Requests (Per Chat, MongoDB Persistent, Logging, Delay)
+# Compatible with Ultroid's Telethon version
 
 import asyncio
 from telethon import events
-from . import udB, ultroid_bot, ultroid_cmd  # Ultroid imports
+from . import udB, ultroid_bot, ultroid_cmd
 
 COLLECTION = "autoapprove_chats"
 
+# ------------------ Helper functions ------------------ #
 def get_enabled_chats():
     data = udB.get(COLLECTION)
     return set(data or [])
@@ -15,9 +16,10 @@ def get_enabled_chats():
 def save_enabled_chats(chats):
     udB.set(COLLECTION, list(chats))
 
+# ------------------ Commands ------------------ #
 @ultroid_cmd(pattern="autoapprove ?(.*)?")
 async def toggle_autoapprove(event):
-    """Toggle/check/list auto-approve join requests (MongoDB persistent)."""
+    """Toggle/check/list auto-approve join requests."""
     args = (event.pattern_match.group(1) or "").lower().strip()
     chats = get_enabled_chats()
 
@@ -52,19 +54,29 @@ async def toggle_autoapprove(event):
     else:
         return await event.edit("❓ Usage:\n`.autoapprove on | off | list`")
 
+# ------------------ Join Request Handler ------------------ #
 @ultroid_bot.on(events.JoinRequest)
 async def approve_join_request(event):
-    """Approve join requests if enabled for this chat, with a 5-second delay."""
+    """Approve join requests safely with logging and 5-second delay."""
     chats = get_enabled_chats()
+    print(f"[AUTOAPPROVE] Join request from {event.sender_id} in chat {event.chat_id}")
+
     if event.chat_id not in chats:
-        return  # Not enabled for this chat
+        print("[AUTOAPPROVE] Auto-approve not enabled for this chat")
+        return
 
     try:
-        await asyncio.sleep(5)  # Delay before approving
+        print(f"[AUTOAPPROVE] Approving join request for {event.sender_id} after 5s delay")
+        await asyncio.sleep(5)
         await event.client.approve_join_request(event.chat_id, event.sender_id)
         await event.client.send_message(
             event.chat_id,
             f"✅ Welcome, [{event.sender.first_name}](tg://user?id={event.sender_id})!"
         )
+        print(f"[AUTOAPPROVE] Approved join request for {event.sender_id}")
     except Exception as e:
-        await event.client.send_message(event.chat_id, f"⚠️ Auto-approve failed: `{e}`")
+        print(f"[AUTOAPPROVE] Error approving join request: {e}")
+        await event.client.send_message(
+            event.chat_id,
+            f"⚠️ Auto-approve failed for [{event.sender.first_name}](tg://user?id={event.sender_id}): `{e}`"
+        )
