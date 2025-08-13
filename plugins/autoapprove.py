@@ -1,10 +1,10 @@
 # Ultroid - UserBot
-# Auto Approve Join Requests (Per Chat, Persistent in MongoDB, With List Command & Delay)
-# Copyright (C) 2025
+# Auto Approve Join Requests (Per Chat, MongoDB Persistent, List Command, Delay)
+# Compatible with Ultroid Plugin System
 
 import asyncio
 from telethon import events
-from . import udB  # Ultroid's MongoDB wrapper
+from . import udB, ultroid_bot, ultroid_cmd  # Import from Ultroid's core
 
 COLLECTION = "autoapprove_chats"
 
@@ -15,7 +15,7 @@ async def get_enabled_chats():
 async def save_enabled_chats(chats):
     await udB.set(COLLECTION, list(chats))
 
-@ultroid_bot.on(events.NewMessage(pattern=r"\.autoapprove ?(.*)?", outgoing=True))
+@ultroid_cmd(pattern="autoapprove ?(.*)?")
 async def toggle_autoapprove(event):
     """Toggle/check/list auto-approve join requests (MongoDB persistent)."""
     args = (event.pattern_match.group(1) or "").lower().strip()
