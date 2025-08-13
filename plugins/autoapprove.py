@@ -1,10 +1,10 @@
 # Ultroid - UserBot
 # Auto Approve Join Requests (Per Chat, MongoDB Persistent, List Command, Delay)
-# Compatible with Ultroid Plugin System
+# Compatible with Ultroid's Telethon version
 
 import asyncio
 from telethon import events
-from . import udB, ultroid_bot, ultroid_cmd  # Import from Ultroid's core
+from . import udB, ultroid_bot, ultroid_cmd  # Ultroid imports
 
 COLLECTION = "autoapprove_chats"
 
@@ -52,7 +52,7 @@ async def toggle_autoapprove(event):
     else:
         return await event.edit("❓ Usage:\n`.autoapprove on | off | list`")
 
-@ultroid_bot.on(events.ChatJoinRequest)
+@ultroid_bot.on(events.JoinRequest)
 async def approve_join_request(event):
     """Approve join requests if enabled for this chat, with a 5-second delay."""
     chats = await get_enabled_chats()
@@ -61,7 +61,7 @@ async def approve_join_request(event):
 
     try:
         await asyncio.sleep(5)  # Delay before approving
-        await event.client.approve_chat_join_request(event.chat_id, event.sender_id)
+        await event.client.approve_join_request(event.chat_id, event.sender_id)
         await event.client.send_message(
             event.chat_id,
             f"✅ Welcome, [{event.sender.first_name}](tg://user?id={event.sender_id})!"
