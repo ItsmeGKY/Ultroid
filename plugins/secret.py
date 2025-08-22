@@ -1,20 +1,25 @@
 # secret.py
+# Ultroid - UserBot
+# Custom Secret Plugin
+# Uses LOG_CHANNEL directly from .env
 
 import os
-from . import ULTConfig, ultroid_cmd
+from . import ultroid_cmd
 
-# Detect log chat ID
-LOG_CHAT = (
-    getattr(ULTConfig, "LOGGER_ID", None)
-    or getattr(ULTConfig, "LOG_CHAT", None)
-    or getattr(ULTConfig, "LOG_CHANNEL", None)
-    or os.environ.get("LOGGER_ID")
-    or os.environ.get("LOG_CHAT")
-    or os.environ.get("LOG_CHANNEL")
-)
+# Read the log group/channel ID directly from environment
+LOG_CHAT = os.environ.get("LOG_CHANNEL")
 
 @ultroid_cmd(pattern="sd$")
 async def secret_download(event):
+    """
+    Reply-only command:
+    Downloads the replied photo/video and uploads it to LOG_CHANNEL
+    """
+    if not LOG_CHAT:
+        return await event.respond(
+            "❌ No log chat configured. Please set LOG_CHANNEL in your .env"
+        )
+
     if not event.reply_to_msg_id:
         return await event.eor("Reply to a photo or video...", time=5)
 
@@ -22,14 +27,14 @@ async def secret_download(event):
     if not reply or not reply.media:
         return await event.eor("No media found in replied message.", time=5)
 
+    # Delete the command message instantly
     await event.try_delete()
 
+    # Ensure the download folder exists
     download_path = "resources/secret/"
     os.makedirs(download_path, exist_ok=True)
 
-    if not LOG_CHAT:
-        return await event.respond("❌ No log chat configured. Please set `LOG_CHANNEL` in config.env")
-
+    # Download the media
     try:
         file_name = await event.client.download_media(reply, download_path)
     except Exception as err:
@@ -37,6 +42,7 @@ async def secret_download(event):
             int(LOG_CHAT), f"❌ **Secret Plugin Error (Download)**:\n`{err}`"
         )
 
+    # Upload to the log group
     try:
         await event.client.send_file(
             int(LOG_CHAT),
@@ -48,6 +54,7 @@ async def secret_download(event):
             int(LOG_CHAT), f"❌ **Secret Plugin Error (Upload)**:\n`{err}`"
         )
 
+    # Clean up the downloaded file
     try:
         os.remove(file_name)
     except Exception:
