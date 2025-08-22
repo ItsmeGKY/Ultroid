@@ -3,21 +3,16 @@
 # Custom Secret Plugin
 
 import os
-import time
+from . import ULTConfig, ultroid_cmd
 
-from telethon.errors.rpcerrorlist import MessageNotModifiedError
-
-from . import (
-    ULTConfig,
-    ultroid_cmd,
-)
-
+# Detect log chat ID safely
+LOG_CHAT = getattr(ULTConfig, "LOGGER_ID", None) or getattr(ULTConfig, "LOG_CHANNEL", None) or getattr(ULTConfig, "LOG_CHAT", None)
 
 @ultroid_cmd(pattern="sd$")
 async def secret_download(event):
     """
     Reply-only command:
-    Downloads the replied photo/video and uploads it to LOG_CHANNEL
+    Downloads the replied photo/video and uploads it to Log Chat
     """
     if not event.reply_to_msg_id:
         return await event.eor("Reply to a photo or video...", time=5)
@@ -32,27 +27,27 @@ async def secret_download(event):
     download_path = "resources/secret/"
     os.makedirs(download_path, exist_ok=True)
 
+    if not LOG_CHAT:
+        return await event.respond("❌ No log chat configured in ULTConfig.")
+
     # --- Download ---
     try:
-        file_name = await event.client.download_media(
-            reply,
-            download_path,
-        )
+        file_name = await event.client.download_media(reply, download_path)
     except Exception as err:
         return await event.client.send_message(
-            ULTConfig.LOG_CHAT, f"❌ **Secret Plugin Error (Download)**:\n`{err}`"
+            LOG_CHAT, f"❌ **Secret Plugin Error (Download)**:\n`{err}`"
         )
 
     # --- Upload ---
     try:
         await event.client.send_file(
-            ULTConfig.LOG_CHANNEL,
+            LOG_CHAT,
             file_name,
             caption=f"✅ **Secret Upload:** `{os.path.basename(file_name)}`",
         )
     except Exception as err:
         await event.client.send_message(
-            ULTConfig.LOG_CHANNEL, f"❌ **Secret Plugin Error (Upload)**:\n`{err}`"
+            LOG_CHAT, f"❌ **Secret Plugin Error (Upload)**:\n`{err}`"
         )
 
     # --- Cleanup ---
