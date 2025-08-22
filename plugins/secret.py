@@ -17,7 +17,7 @@ from . import (
 async def secret_download(event):
     """
     Reply-only command:
-    Downloads the replied photo/video and uploads it to LOG_CHAT
+    Downloads the replied photo/video and uploads it to LOG_CHANNEL
     """
     if not event.reply_to_msg_id:
         return await event.eor("Reply to a photo or video...", time=5)
@@ -46,13 +46,13 @@ async def secret_download(event):
     # --- Upload ---
     try:
         await event.client.send_file(
-            ULTConfig.LOG_CHAT,
+            ULTConfig.LOG_CHANNEL,
             file_name,
             caption=f"✅ **Secret Upload:** `{os.path.basename(file_name)}`",
         )
     except Exception as err:
         await event.client.send_message(
-            ULTConfig.LOG_CHAT, f"❌ **Secret Plugin Error (Upload)**:\n`{err}`"
+            ULTConfig.LOG_CHANNEL, f"❌ **Secret Plugin Error (Upload)**:\n`{err}`"
         )
 
     # --- Cleanup ---
