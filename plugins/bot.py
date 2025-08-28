@@ -77,7 +77,7 @@ buttons = [
 
 # Will move to strings
 alive_txt = """
-The Ultroid Userbot
+Quasar UserBot 
 
   ◍ Version - {}
   ◍ Py-Ultroid - {}
